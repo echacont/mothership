@@ -13,119 +13,11 @@ void configure(void);
 #include "sampler.h"
 sampler smplr0;
 easyFFT fft0;
-
 uint8_t getLowFreqIndex(float f_peaks[]);
 uint8_t getHighFreqIndex(float f_peaks[]);
 
-// cochinadilla de FastLED
-#include <FastLED.h>
-
-#define LED_TYPE    WS2811
-#define COLOR_ORDER GRB
-
-CRGB leds[NUM_LEDS];
-CRGBPalette16 currentPalette;
-TBlendType    currentBlending;
-
-void fadeall() { for(int i = 0; i < NUM_LEDS; i++) { leds[i].nscale8(240); } }
-
-void fadeallR() 
-{ 
-  for(uint8_t i = 0; i < NUM_LEDS/NUM_LEDS_PER_GROUP; i++) 
-  { 
-    for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
-    {
-      leds[i*NUM_LEDS_PER_GROUP+j].nscale8(240); 
-    } 
-  }
-}
-
-
-void FillLEDsStrip(uint8_t colorIndex)
-{
-    for( uint8_t i = 0; i < NUM_LEDS; ++i) 
-    {
-          leds[i] = ColorFromPalette( currentPalette, colorIndex, BRIGHTNESS, currentBlending);
-          colorIndex += 1;
-    }
-}
-
-void FillLEDsPattern0(uint8_t colorIndex, uint8_t rndm )
-{
-    for( uint8_t i = 0; i < NUM_LEDS/NUM_LEDS_PER_GROUP; ++i)
-      if ((rndm % NUM_LEDS/NUM_LEDS_PER_GROUP) == i)
-        for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
-          leds[4*i+j] = ColorFromPalette( currentPalette, colorIndex, BRIGHTNESS, currentBlending);
-    fadeall();
-}
-
-void FillLEDsPattern1(uint8_t colorIndex, uint8_t led)
-{
-  for( uint8_t i = 0; i < NUM_LEDS/NUM_LEDS_PER_GROUP; ++i)
-  {
-    led = random8();
-    if ((led % 2))
-      for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
-      {
-        leds[4*i+j] = ColorFromPalette( currentPalette, colorIndex, BRIGHTNESS, currentBlending);
-        colorIndex += 1;
-      }
-    //else
-    //  for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
-    //    leds[4*i+j] = CRGB::Black;
-  }
-  fadeallR();
-}
-
-// This function sets up a palette of purple and green stripes.
-void SetupPurpleAndGreenPalette()
-{
-    CRGB purple = CHSV( HUE_PURPLE, 255, 255);
-    CRGB green  = CHSV( HUE_GREEN, 255, 255);
-    CRGB black  = CRGB::Black;
-    
-    currentPalette = CRGBPalette16(
-                                   green , black, green , black,  
-                                   purple, black, purple, black,
-                                   green , black, green,  black,
-                                   purple, purple,black,  black );
-}
-
-void SetupYellowAndBluePalette()
-{
-    CRGB yellow = CHSV( HUE_YELLOW, 255, 255);
-    CRGB blue  = CHSV( HUE_BLUE, 255, 255);
-    CRGB black  = CRGB::Black;
-    
-    currentPalette = CRGBPalette16(
-                                   yellow , yellow ,black,  black,
-                                   blue   , blue   ,black,  black,
-                                   yellow , yellow ,black,  black,
-                                   blue   , blue   ,black,  black );
-}
-
-CRGB getRandom(CRGB hue1, CRGB hue2)
-{
-  CRGB black  = CRGB::Black;
-  uint8_t rndm = random8() % 3;
-  if (rndm == 0)
-    return hue2;
-  else if (rndm == 1)
-    return hue1;
-  else return black;
-}
-
-void SetupMonochomePallete(CRGB hue1, CRGB hue2)
-{
-  currentPalette = CRGBPalette16( getRandom(hue1, hue2), getRandom(hue1, hue2),
-            getRandom(hue1, hue2), getRandom(hue1, hue2),
-      getRandom(hue1, hue2), getRandom(hue1, hue2),
-     getRandom(hue1, hue2), getRandom(hue1, hue2),
-      getRandom(hue1, hue2), getRandom(hue1, hue2),
-     getRandom(hue1, hue2), getRandom(hue1, hue2),
-      getRandom(hue1, hue2), getRandom(hue1, hue2),
-       getRandom(hue1, hue2), getRandom(hue1, hue2) ); 
-}
+#include "lamps.h"
+Lamps lmps0;
 
 void configure()
 {
@@ -136,23 +28,11 @@ void configure()
   digitalWrite(DEBUG_PIN, HIGH);
   configureADC();
   configureTC2();
+  lmps0.configure();
 
-  // FastLED config
-  {
-    delay(3000); // power-up safety delay
-    FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-    FastLED.setBrightness(  BRIGHTNESS );
-
-    //currentPalette = RainbowColors_p;
-    //SetupPurpleAndGreenPalette();
-    SetupMonochomePallete(CRGB::Fuchsia, CRGB::OrangeRed);
-    currentBlending = LINEARBLEND;
-    //currentBlending = NOBLEND;
-  }
   //Serial.begin(9600);
   //Serial.println("sampler: configuration done");
 }
-
 
 uint8_t getLowFreqIndex(float f_peaks[])
 {
@@ -198,15 +78,9 @@ void configureTC2()
   TIMSK2 = 0x02;
 }
 
-void disableTC2int()
-{
-  TIMSK2 = 0;
-}
+void disableTC2int() { TIMSK2 = 0; }
 
-void enableTC2int()
-{
-  TIMSK2 = 0x02;
-}
+void enableTC2int() { TIMSK2 = 0x02; }
 
 void configureADC()
 {
@@ -227,14 +101,9 @@ ISR (ADC_vect)
 }
 
 // start ADC conversion
-ISR (TIMER2_COMPA_vect) 
-{ ADCSRA |= 0x40; } 
+ISR (TIMER2_COMPA_vect) { ADCSRA |= 0x40; } 
 
-void setup() 
-{
-  configure();
-}
-
+void setup()  { configure(); }
 
 void loop() 
 {
@@ -245,8 +114,6 @@ void loop()
     fft0.FFT(smplr0.buffer, NSAMPLES, 4000.0);
     uint8_t LFi = getLowFreqIndex(fft0.f_peaks);
     uint8_t HFi = getHighFreqIndex(fft0.f_peaks);
-    static uint8_t prevLFi = 0;
-    static uint8_t prevHFi = 0;
 
     /*{
       Serial.print(time); Serial.print(": "); 
@@ -260,52 +127,15 @@ void loop()
     }*/
     
     // FastLED operations
-    {
-      static uint8_t startIndex = 0;
-      static uint8_t led = 0;
-      // generate events
-      //if (LFi == 2)     startIndex += 8;
-      //if (LFi == 4)     startIndex += 1;
-      //if (LFi == 1)     startIndex -= 1;
-      //if (HFi == 4)     SetupYellowAndBluePalette();
-      //else              SetupPurpleAndGreenPalette();
-      
-      
-      if ((LFi == 0) && (HFi == 2)) {
-        //startIndex++;
-        led = random8();
-      }
+    lmps0.run(LFi, HFi);
 
-      if ((LFi == 0) && (prevLFi == 0) && (HFi == 2))
-        SetupMonochomePallete(CRGB::Magenta, CRGB::MediumPurple);
-
-      if ((LFi == 1) && (prevLFi == 0) && (HFi == 4)) 
-        SetupMonochomePallete(CRGB::Fuchsia, CRGB::DarkRed);
-        //startIndex += 4;
-      //else
-        //SetupPurpleAndGreenPalette();
-      
-      if ((LFi == 1) && (prevHFi == 3) && (HFi == 0)) {
-        SetupMonochomePallete(CRGB::DarkOrchid, CRGB::Orchid);
-        //startIndex -= 2;
-      }
-      //led = random8();
-      
-      //if (LFi < 4) led = LFi;
-      //else led = 3;
-      //FillLEDsStrip(startIndex);
-      FillLEDsPattern1(startIndex, led);
-      //FillLEDsFromPaletteColors(startIndex);
-      //FillLEDsPallete1(startIndex, led);
-      FastLED.show();
-    }
     // debug
     { 
       static bool pin = 0;
       pin = !pin;
       digitalWrite(DEBUG_PIN, pin);
     }
-    prevHFi = HFi; prevLFi = LFi;
+
 
     // clear bufferReady flag to enabling sampling
     // resets buffer pointer
