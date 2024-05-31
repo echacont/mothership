@@ -27,11 +27,23 @@ CRGB leds[NUM_LEDS];
 CRGBPalette16 currentPalette;
 TBlendType    currentBlending;
 
-void fadeall() { for(int i = 0; i < NUM_LEDS; i++) { leds[i].nscale8(220); } }
+void fadeall() { for(int i = 0; i < NUM_LEDS; i++) { leds[i].nscale8(240); } }
+
+void fadeallR() 
+{ 
+  for(uint8_t i = 0; i < NUM_LEDS/NUM_LEDS_PER_GROUP; i++) 
+  { 
+    for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
+    {
+      leds[i*NUM_LEDS_PER_GROUP+j].nscale8(240); 
+    } 
+  }
+}
+
 
 void FillLEDsStrip(uint8_t colorIndex)
 {
-    for( uint8_t i = 0; i < NUM_LEDS_STRIP; ++i) 
+    for( uint8_t i = 0; i < NUM_LEDS; ++i) 
     {
           leds[i] = ColorFromPalette( currentPalette, colorIndex, BRIGHTNESS, currentBlending);
           colorIndex += 1;
@@ -41,22 +53,28 @@ void FillLEDsStrip(uint8_t colorIndex)
 void FillLEDsPattern0(uint8_t colorIndex, uint8_t rndm )
 {
     for( uint8_t i = 0; i < NUM_LEDS/NUM_LEDS_PER_GROUP; ++i)
-      if ((rndm % 4) == i)
+      if ((rndm % NUM_LEDS/NUM_LEDS_PER_GROUP) == i)
         for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
           leds[4*i+j] = ColorFromPalette( currentPalette, colorIndex, BRIGHTNESS, currentBlending);
     fadeall();
 }
 
-void FillLEDsPallete1(uint8_t colorIndex, uint8_t led)
+void FillLEDsPattern1(uint8_t colorIndex, uint8_t led)
 {
   for( uint8_t i = 0; i < NUM_LEDS/NUM_LEDS_PER_GROUP; ++i)
-      if ((led % (NUM_LEDS/NUM_LEDS_PER_GROUP)) == i)
-        for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
-          leds[4*i+j] = ColorFromPalette( currentPalette, colorIndex, BRIGHTNESS, currentBlending);
-      //else
-      //  for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
-      //    leds[4*i+j] = CRGB::Black;
-  fadeall();
+  {
+    led = random8();
+    if ((led % 2))
+      for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
+      {
+        leds[4*i+j] = ColorFromPalette( currentPalette, colorIndex, BRIGHTNESS, currentBlending);
+        colorIndex += 1;
+      }
+    //else
+    //  for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
+    //    leds[4*i+j] = CRGB::Black;
+  }
+  fadeallR();
 }
 
 // This function sets up a palette of purple and green stripes.
@@ -269,14 +287,14 @@ void loop()
       
       if ((LFi == 1) && (prevHFi == 3) && (HFi == 0)) {
         SetupMonochomePallete(CRGB::DarkOrchid, CRGB::Orchid);
-        startIndex -= 2;
+        //startIndex -= 2;
       }
       //led = random8();
       
       //if (LFi < 4) led = LFi;
       //else led = 3;
       //FillLEDsStrip(startIndex);
-      FillLEDsPattern0(startIndex, led);
+      FillLEDsPattern1(startIndex, led);
       //FillLEDsFromPaletteColors(startIndex);
       //FillLEDsPallete1(startIndex, led);
       FastLED.show();
