@@ -96,8 +96,7 @@ ISR (ADC_vect)
 {
   disableTC2int();
   smplr0.pushSample(int8_t(ADCH-SAMPLE_ADJ));
-  if(!smplr0.isBufferReady())
-     enableTC2int();
+  if(!smplr0.isBufferReady()) enableTC2int();
 }
 
 // start ADC conversion

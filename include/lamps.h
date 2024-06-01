@@ -16,23 +16,26 @@ struct Lamps
 {
   private:
   CRGB leds[NUM_LEDS];
-  CRGBPalette16 currentPalette;
+  //CRGBPalette16 currentPalette;
+  CRGBPalette16 alternate1Palette;
+  CRGBPalette16 alternate2Palette;
   TBlendType    currentBlending;
-
-  void fadeall(void);
-  void fadeallR(void);
+  uint16_t freezeCounter;
+  uint8_t colorIndex;
+  uint8_t prevLFi ;
+  uint8_t prevHFi ;
 
   public:
   Lamps();
   void configure(void);
+  void setupPallete(void);
   void run(uint8_t, uint8_t);
-  void FillLEDsStrip(uint8_t colorIndex);
-  void FillLEDsPattern0(uint8_t colorIndex, uint8_t rndm );
-  void FillLEDsPattern1(uint8_t colorIndex, uint8_t led);
-  void SetupPurpleAndGreenPalette(void);
-  void SetupYellowAndBluePalette(void);
+  void FillLEDsPattern0(uint8_t led, CRGBPalette16 palette);
+  void FillLEDsPattern1(uint8_t led, CRGBPalette16 palette);
+  void fadeall(void);
+  void fadeallR(void);
   CRGB getRandom(CRGB hue1, CRGB hue2);
-  void SetupMonochomePallete(CRGB hue1, CRGB hue2);
+  CRGBPalette16 SetupMonochomePallete(CRGB hue1, CRGB hue2);
 
 
 };

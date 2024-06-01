@@ -7,7 +7,13 @@
 #define SAMPLE_ADJ 100
 
 // neopixels
-#define NUM_LEDS    40
+#define NUM_LEDS    16
 #define NUM_LEDS_PER_GROUP 4
 #define LED_PIN     5
 #define BRIGHTNESS  255
+
+// lamps
+#define NUM_EVENTS  4
+#define FREEZE_TIME 10
+#define P_CHANGE 5
+#define C_CHANGE 1
