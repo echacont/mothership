@@ -25,6 +25,7 @@ void Lamps::configure(void)
 void Lamps::setupPallete(void)
 {
   alternate1Palette =  SetupMonochomePallete(hue1, hue2); 
+  alternate2Palette = SetupMonochomePallete(CRGB::MintCream, CRGB::LimeGreen);
 }
 
 void Lamps::toggleScene(bool input)
@@ -33,12 +34,8 @@ void Lamps::toggleScene(bool input)
 
   if (!prevInput && input) // positive edge
   {
+    setupPallete();
     scene++;
-       { // debug
-          static bool pin = 0;
-          pin = !pin;
-          digitalWrite(DEBUG_PIN, pin);
-      }
   }
   switch(scene)
   {
@@ -51,9 +48,12 @@ void Lamps::toggleScene(bool input)
       default:
         scene = 0; 
   } 
+  
   prevInput = input;
 }
 
+// take FFT results summarized by LFi and HFi and generate events
+// mimicking beat detection
 void Lamps::run(uint8_t LFi, uint8_t HFi)
 {
   static uint8_t led = 0;
@@ -64,7 +64,6 @@ void Lamps::run(uint8_t LFi, uint8_t HFi)
     #ifdef DEBUG_SERIAL
       Serial.print("F "); Serial.print(freezeCounter);
     #endif
-    //
   }
   else // freezeCounter is zero (expired)
   {
@@ -94,7 +93,9 @@ void Lamps::run(uint8_t LFi, uint8_t HFi)
       #endif
     } else  if (diff < FFT_HIGH_DIFF-1) {
       freezeCounter = FREEZE_TIME;
-      FillLEDsPattern1(led, alternate1Palette);
+      // generate gliches, sometimes
+      if (!(random8()%4)) FillLEDsPattern1(led, alternate2Palette);
+      else FillLEDsPattern1(led, alternate1Palette);
       #ifdef DEBUG_SERIAL
       Serial.print(" --");
       #endif
@@ -135,7 +136,7 @@ void Lamps::FillLEDsPattern0(uint8_t led , CRGBPalette16 palette)
         leds[4*i+j] = ColorFromPalette(palette, colorIndex, BRIGHTNESS, currentBlending);
         colorIndex += C_CHANGE;
       }
-  fadeall();
+  //fadeall();
 }
 
 void Lamps::FillLEDsPattern1(uint8_t led, CRGBPalette16 palette)

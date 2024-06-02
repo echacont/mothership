@@ -11,7 +11,7 @@
 #define NSAMPLES  128
 #define SAMPLE_ADJ 100
 // neopixels
-#define NUM_LEDS    16
+#define NUM_LEDS    40
 #define NUM_LEDS_PER_GROUP 4
 #define LED_PIN     5
 #define BRIGHTNESS  255

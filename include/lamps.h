@@ -17,8 +17,8 @@ struct Lamps
   private:
   CRGB leds[NUM_LEDS];
   //CRGBPalette16 currentPalette;
-  CRGBPalette16 alternate1Palette;
-  CRGBPalette16 alternate2Palette;
+  CRGBPalette16 alternate1Palette; // regular palette
+  CRGBPalette16 alternate2Palette; // glitch palette
   TBlendType    currentBlending;
   uint16_t freezeCounter;
   uint8_t colorIndex;
