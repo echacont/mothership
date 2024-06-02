@@ -4,6 +4,7 @@
 
 sampler::sampler()
 {
+  time = 0;
   pointer = 0;
   bufferReady = false;
   for (uint8_t i = 0; i<NSAMPLES; i++)
@@ -86,7 +87,7 @@ void sampler::clearBufferReady(void)
 
 easyFFT::easyFFT() { }
 
-float easyFFT::FFT(int8_t in[],uint8_t N,float Frequency)
+void easyFFT::FFT(int8_t in[],uint8_t N,float Frequency)
 {
 /*
 Code to perform FFT on arduino,
@@ -108,10 +109,11 @@ Documentation:https://www.instructables.com/member/abhilash_patel/instructables/
 */
 
 unsigned  int data[13]={1,2,4,8,16,32,64,128,256,512,1024,2048};
-int a,c1,f,o,x;
+int c1,f,o,x;
+uint8_t a;
 a=N;  
                                  
-      for(int i=0;i<12;i++)                 //calculating  the levels
+      for(int8_t i=0;i<12;i++)                 //calculating  the levels
          { if(data[i]<=a){o=i;} }
       
 int in_ps[data[o]]={};     //input for sequencing
@@ -131,7 +133,7 @@ x=0;
          }
 
  
-      for(int i=0;i<data[o];i++)            // update input array as per bit reverse order
+      for(uint8_t i=0;i<data[o];i++)            // update input array as per bit reverse order
          {
           if(in_ps[i]<a)
           {out_r[i]=in[in_ps[i]];}
@@ -184,7 +186,7 @@ Serial.print(out_im[i]);  Serial.println("i");
 
 
 //---> here onward out_r contains  amplitude and our_in conntains frequency (Hz)
-    for(int i=0;i<data[o-1];i++)               // getting amplitude from compex number
+    for(uint8_t i=0;i<data[o-1];i++)               // getting amplitude from compex number
         {
          out_r[i]=sqrt(out_r[i]*out_r[i]+out_im[i]*out_im[i]);  // to  increase the speed delete sqrt
          out_im[i]=i*Frequency/N;
@@ -199,7 +201,7 @@ Serial.print(out_im[i]);  Serial.println("i");
 
 
 x=0;       // peak detection
-   for(int i=1;i<data[o-1]-1;i++)
+   for(uint8_t i=1;i<data[o-1]-1;i++)
       {
       if(out_r[i]>out_r[i-1] &&  out_r[i]>out_r[i+1]) 
       {in_ps[x]=i;    //in_ps array used for storage of  peak number
@@ -223,7 +225,7 @@ c=0;
 
 
 
-    for(int i=0;i<5;i++)     //  updating f_peak array (global variable)with descending order
+    for(int i=0;i<NUM_PEAKS;i++)     //  updating f_peak array (global variable)with descending order
     {
     f_peaks[i]=out_im[in_ps[i]];
     }

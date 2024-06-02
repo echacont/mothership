@@ -24,6 +24,9 @@ struct Lamps
   uint8_t colorIndex;
   uint8_t prevLFi ;
   uint8_t prevHFi ;
+  bool input; // user interface input (push-button)
+  uint8_t scene;
+  CRGB hue1, hue2; // hue used to compose current pallete
 
   public:
   Lamps();
@@ -36,8 +39,8 @@ struct Lamps
   void fadeallR(void);
   CRGB getRandom(CRGB hue1, CRGB hue2);
   CRGBPalette16 SetupMonochomePallete(CRGB hue1, CRGB hue2);
-
-
+  // user interface
+  void toggleScene(bool input); // positive-edge activated
 };
 
 

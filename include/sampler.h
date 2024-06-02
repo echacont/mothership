@@ -12,6 +12,7 @@ struct sampler
   bool     bufferReady;
   
   public:
+  long time;
   int8_t   buffer[NSAMPLES];
   sampler();
   void pushSample(int8_t sample);
@@ -51,12 +52,10 @@ struct easyFFT
   
   //---------------------------------------------------------------------------//
 
-  #define NUM_PEAKS 5
-
   public:
   float f_peaks[NUM_PEAKS];  // top 5 frequencies peaks in descending order
   easyFFT();
-  float FFT(int8_t in[],uint8_t N,float Frequency);
+  void FFT(int8_t in[],uint8_t N,float Frequency);
   float sine(int i);
   float cosine(int i);
 

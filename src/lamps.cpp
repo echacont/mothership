@@ -9,6 +9,8 @@ Lamps::Lamps(void)
   freezeCounter = 0;
   prevLFi = 0;
   prevHFi = 0;
+  input = false;
+  scene = 0;
 }
 
 void Lamps::configure(void)
@@ -22,8 +24,34 @@ void Lamps::configure(void)
 
 void Lamps::setupPallete(void)
 {
-  alternate1Palette =  SetupMonochomePallete(CRGB::DarkMagenta, CRGB::Violet);
-  //alternate2Palette =  SetupMonochomePallete(CRGB::MediumTurquoise, CRGB::OrangeRed);
+  alternate1Palette =  SetupMonochomePallete(hue1, hue2); 
+}
+
+void Lamps::toggleScene(bool input)
+{
+  static bool prevInput = false;
+
+  if (!prevInput && input) // positive edge
+  {
+    scene++;
+       { // debug
+          static bool pin = 0;
+          pin = !pin;
+          digitalWrite(DEBUG_PIN, pin);
+      }
+  }
+  switch(scene)
+  {
+      case 0:
+        hue1 = CRGB::LawnGreen; hue2 = CRGB::LimeGreen; break;  // ** warmup
+      case 1:
+        hue1 = CRGB::Crimson;   hue2 = CRGB::Red; break;   // ** peak
+      case 2:
+        hue1 = CRGB::LightPink; hue2 = CRGB::Purple; break; // ** B2B
+      default:
+        scene = 0; 
+  } 
+  prevInput = input;
 }
 
 void Lamps::run(uint8_t LFi, uint8_t HFi)
@@ -33,29 +61,54 @@ void Lamps::run(uint8_t LFi, uint8_t HFi)
   if (freezeCounter > 0) // changes are frozen except for fadeall
   {
     freezeCounter--;
+    #ifdef DEBUG_SERIAL
+      Serial.print("F "); Serial.print(freezeCounter);
+    #endif
+    //
   }
   else // freezeCounter is zero (expired)
   {
-    // generate events for next loop
-    if ((LFi == 0) && (HFi == 2)) 
+    int8_t diff = HFi - LFi;
+    #ifdef DEBUG_SERIAL
+      if (diff < 0) Serial.print("D: "); 
+      else Serial.print("D:  ");
+      Serial.print(diff);
+    #endif
+    // generate events 
+    if (diff > FFT_BEAT_DIFF) 
     { 
-      freezeCounter = FREEZE_TIME*2;
+      freezeCounter = FREEZE_TIME;
       led = random8() % NUM_LEDS/NUM_LEDS_PER_GROUP;
-      FillLEDsPattern1(led, alternate1Palette);
+      FillLEDsPattern0(led, alternate1Palette);
+      #ifdef DEBUG_SERIAL
+      Serial.print(" *");
+      #endif
     }
-    else if ((LFi == 1) && (prevLFi == 0) && (HFi == 4)) {
-      //colorIndex += C_CHANGE*8;
+    else if (diff < FFT_HIGH_DIFF) {
+      colorIndex += C_CHANGE;
       setupPallete();
+      FillLEDsPattern0(led, alternate1Palette);
       freezeCounter = FREEZE_TIME;
-    } else  if ((LFi == 0) && (prevLFi == 0) && (HFi == 2)) {
+      #ifdef DEBUG_SERIAL
+      Serial.print(" -");
+      #endif
+    } else  if (diff < FFT_HIGH_DIFF-1) {
       freezeCounter = FREEZE_TIME;
       FillLEDsPattern1(led, alternate1Palette);
+      #ifdef DEBUG_SERIAL
+      Serial.print(" --");
+      #endif
+    } else {
+      colorIndex++;
     }
-    FillLEDsPattern0(led, alternate1Palette);
+    
   }
   fadeall();
   FastLED.show();
-  prevHFi = HFi; prevLFi = LFi;
+
+  #ifdef DEBUG_SERIAL
+    Serial.println();
+  #endif
 }
 
 void Lamps::fadeall() { for(int i = 0; i < NUM_LEDS; i++) { leds[i].nscale8(247); } }

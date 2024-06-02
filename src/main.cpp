@@ -9,6 +9,7 @@ void enableTC2int(void);
 void disableTC2int(void);
 void configureADC(void);
 void configure(void);
+bool getPushButton(void);
 
 #include "sampler.h"
 sampler smplr0;
@@ -19,26 +20,32 @@ uint8_t getHighFreqIndex(float f_peaks[]);
 #include "lamps.h"
 Lamps lmps0;
 
-void configure()
+void setup()
 {
   // configure OC2A digital pin as output
   pinMode(OC2A_PIN, OUTPUT);
   // configure debug digital pin as output
   pinMode(DEBUG_PIN, OUTPUT);
-  digitalWrite(DEBUG_PIN, HIGH);
+  // configure push button pull up input pin
+  pinMode(PUSH_BUTTON_PIN, INPUT_PULLUP);
+  // configure Analog-to-Digital Converter
   configureADC();
+  // configure Timer/Counter 2
   configureTC2();
+  // configure FastLED
   lmps0.configure();
-
-  //Serial.begin(9600);
-  //Serial.println("sampler: configuration done");
+  // let's go!
+  #ifdef DEBUG_SERIAL
+    Serial.begin(115200);
+    Serial.println("sampler: configuration done");
+  #endif
 }
 
 uint8_t getLowFreqIndex(float f_peaks[])
 {
   uint8_t lowFreqIndex = 0;
   int16_t lowFreq = 2000; // max possible freq given sample rate
-  for (uint8_t i = 0; i<NUM_PEAKS; i++)
+  for (uint8_t i = FFT_START_IDX; i<NUM_PEAKS; i++)
   {
     if (f_peaks[i] < lowFreq)
     {
@@ -53,7 +60,7 @@ uint8_t getHighFreqIndex(float f_peaks[])
 {
   uint8_t highFreqIndex = 0;
   int16_t highFreq = 0;
-  for (uint8_t i = 0; i<NUM_PEAKS; i++)
+  for (uint8_t i = FFT_START_IDX; i<NUM_PEAKS; i++)
   {
     if (f_peaks[i] > highFreq)
     {
@@ -99,42 +106,38 @@ ISR (ADC_vect)
   if(!smplr0.isBufferReady()) enableTC2int();
 }
 
-// start ADC conversion
-ISR (TIMER2_COMPA_vect) { ADCSRA |= 0x40; } 
+ISR (TIMER2_COMPA_vect) { ADCSRA |= 0x40; } // start ADC conversion
 
-void setup()  { configure(); }
+//void setup()  { configure(); }
 
 void loop() 
 {
   if (smplr0.isBufferReady()) 
   {
-    //unsigned long time = millis();
+    #ifdef DEBUG_SERIAL
+    // update time
+    smplr0.time = millis();
+    #endif
     // 4000 Hz was measured using instrumentation on DEBUG_PIN
     fft0.FFT(smplr0.buffer, NSAMPLES, 4000.0);
     uint8_t LFi = getLowFreqIndex(fft0.f_peaks);
     uint8_t HFi = getHighFreqIndex(fft0.f_peaks);
 
-    /*{
-      Serial.print(time); Serial.print(": "); 
-      for (uint8_t i = 0; i<NUM_PEAKS; i++)
+    {
+      #ifdef DEBUG_SERIAL
+        Serial.print(smplr0.time); Serial.print(": "); 
+      #endif
+      /*for (uint8_t i = 0; i<NUM_PEAKS; i++)
       {
         Serial.print(int(fft0.f_peaks[i]), DEC); Serial.print(" ");
       }
-      Serial.println();
-      Serial.print("sampler:  lower freq FFT index: "); Serial.println(LFi);
-      Serial.print("sampler: higher freq FFT index: "); Serial.println(HFi);
-    }*/
+      Serial.print("LFi: "); Serial.print(LFi);
+      Serial.print(" HFi: "); Serial.print(HFi);
+      */
+    }
     
     // FastLED operations
     lmps0.run(LFi, HFi);
-
-    // debug
-    { 
-      static bool pin = 0;
-      pin = !pin;
-      digitalWrite(DEBUG_PIN, pin);
-    }
-
 
     // clear bufferReady flag to enabling sampling
     // resets buffer pointer
@@ -143,4 +146,29 @@ void loop()
     enableTC2int();
   }
 
+  // pass push-button state to Lamps object to handle scene switching
+  lmps0.toggleScene(getPushButton());
+
+}
+
+bool getPushButton(void)
+{
+  // PUSH BUTTON debouncer stuff (actually a low pass filter)
+  // statusBTN is true only if button have been
+  // pushed down for a while.
+  static uint8_t debounceBTN = DEBOUNCE_CYCLES;  // debounce counter
+  static bool statusBTN = false;                  // debounced state
+  uint8_t currentBTN = digitalRead(PUSH_BUTTON_PIN);
+  if (currentBTN == LOW) // button was pushed, decrease debounce counter
+    debounceBTN--;
+  else { // button was released, reset debounced state
+    statusBTN = false;
+    debounceBTN = DEBOUNCE_CYCLES;
+  }
+  if (debounceBTN == 0) { 
+      // button has been pressed long enough for code to reach here
+      debounceBTN = DEBOUNCE_CYCLES;
+      if (statusBTN == false) statusBTN = true; // set debounced state
+  }
+  return statusBTN; // return debounced state
 }
