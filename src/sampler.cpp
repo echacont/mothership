@@ -259,6 +259,31 @@ float easyFFT::cosine(int i)
   else if(j>270 && j<361){out= sine_data[j-270];}
   return (out/255);
 }
-
-
+// end of easyFFT
 //------------------------------------------------------------------------------------//
+ 
+// aditional methods to get insight from f_peaks
+
+void easyFFT::getFreqIndexes(void)
+{
+  uint8_t lowFreqIndex = 0;
+  int16_t lowFreq = 2000; // max possible freq given sample rate
+  uint8_t highFreqIndex = 0;
+  int16_t highFreq = 0;
+  for (uint8_t i = FFT_START_IDX; i<NUM_PEAKS; i++)
+  {
+    if (f_peaks[i] < lowFreq)
+    {
+      lowFreq = f_peaks[i];
+      lowFreqIndex = i;
+    }
+    if (f_peaks[i] > highFreq)
+    {
+      highFreq = f_peaks[i];
+      highFreqIndex = i;
+    }
+  }
+  LFi = lowFreqIndex;
+  HFi = highFreqIndex;
+  
+}

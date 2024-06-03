@@ -13,8 +13,6 @@ bool getPushButton(void);
 #include "sampler.h"
 sampler smplr0;
 easyFFT fft0;
-uint8_t getLowFreqIndex(float f_peaks[]);
-uint8_t getHighFreqIndex(float f_peaks[]);
 
 #include "lamps.h"
 Lamps lmps0;
@@ -50,8 +48,7 @@ void loop()
     #endif
     // 4000 Hz was measured using instrumentation on DEBUG_PIN
     fft0.FFT(smplr0.buffer, NSAMPLES, 4000.0);
-    uint8_t LFi = getLowFreqIndex(fft0.f_peaks);
-    uint8_t HFi = getHighFreqIndex(fft0.f_peaks);
+    fft0.getFreqIndexes();
     #ifdef DEBUG_SERIAL
         Serial.print(smplr0.time); Serial.print(": "); 
         /*for (uint8_t i = 0; i<NUM_PEAKS; i++)
@@ -63,7 +60,7 @@ void loop()
         */
     #endif
     // FastLED operations
-    lmps0.run(LFi, HFi);
+    lmps0.run(fft0.LFi, fft0.HFi);
     {  // debug
       static bool pin = 0;
       pin = !pin;
@@ -99,36 +96,6 @@ bool getPushButton(void)
       if (statusBTN == false) statusBTN = true; // set debounced state
   }
   return statusBTN; // return debounced state
-}
-
-uint8_t getLowFreqIndex(float f_peaks[])
-{
-  uint8_t lowFreqIndex = 0;
-  int16_t lowFreq = 2000; // max possible freq given sample rate
-  for (uint8_t i = FFT_START_IDX; i<NUM_PEAKS; i++)
-  {
-    if (f_peaks[i] < lowFreq)
-    {
-      lowFreq = f_peaks[i];
-      lowFreqIndex = i;
-    }
-  }
-  return lowFreqIndex;
-}
-
-uint8_t getHighFreqIndex(float f_peaks[])
-{
-  uint8_t highFreqIndex = 0;
-  int16_t highFreq = 0;
-  for (uint8_t i = FFT_START_IDX; i<NUM_PEAKS; i++)
-  {
-    if (f_peaks[i] > highFreq)
-    {
-      highFreq = f_peaks[i];
-      highFreqIndex = i;
-    }
-  }
-  return highFreqIndex;
 }
 
 void configureTC2()

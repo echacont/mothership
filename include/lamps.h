@@ -33,6 +33,7 @@ struct Lamps
   void configure(void);
   void setupPallete(void);
   void run(uint8_t, uint8_t);
+  void FillLEDs(uint8_t led, CRGBPalette16 palette);
   void FillLEDsPattern0(uint8_t led, CRGBPalette16 palette);
   void FillLEDsPattern1(uint8_t led, CRGBPalette16 palette);
   void fadeall(void);

@@ -19,24 +19,12 @@ void Lamps::configure(void)
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
     FastLED.setBrightness(BRIGHTNESS);
     setupPallete();
+    alternate2Palette = SetupMonochomePallete(CRGB::Yellow, CRGB::Pink);
     currentBlending = LINEARBLEND;
 }
 
 void Lamps::setupPallete(void)
 {
-  alternate1Palette =  SetupMonochomePallete(hue1, hue2); 
-  alternate2Palette = SetupMonochomePallete(CRGB::MintCream, CRGB::LimeGreen);
-}
-
-void Lamps::toggleScene(bool input)
-{
-  static bool prevInput = false;
-
-  if (!prevInput && input) // positive edge
-  {
-    setupPallete();
-    scene++;
-  }
   switch(scene)
   {
       case 0:
@@ -47,8 +35,19 @@ void Lamps::toggleScene(bool input)
         hue1 = CRGB::LightPink; hue2 = CRGB::Purple; break; // ** B2B
       default:
         scene = 0; 
+        hue1 = CRGB::LawnGreen; hue2 = CRGB::LimeGreen; break;  // ** warmup
   } 
-  
+  alternate1Palette =  SetupMonochomePallete(hue1, hue2); 
+}
+
+void Lamps::toggleScene(bool input)
+{
+  static bool prevInput = false;
+  if (!prevInput && input) // positive edge
+  {
+    scene++;
+    setupPallete();
+  }
   prevInput = input;
 }
 
@@ -57,10 +56,12 @@ void Lamps::toggleScene(bool input)
 void Lamps::run(uint8_t LFi, uint8_t HFi)
 {
   static uint8_t led = 0;
-
+  fadeall();
+  
   if (freezeCounter > 0) // changes are frozen except for fadeall
   {
     freezeCounter--;
+    FillLEDs(led, alternate1Palette);
     #ifdef DEBUG_SERIAL
       Serial.print("F "); Serial.print(freezeCounter);
     #endif
@@ -84,27 +85,24 @@ void Lamps::run(uint8_t LFi, uint8_t HFi)
       #endif
     }
     else if (diff < FFT_HIGH_DIFF) {
-      colorIndex += C_CHANGE;
       setupPallete();
-      FillLEDsPattern0(led, alternate1Palette);
-      freezeCounter = FREEZE_TIME;
+      FillLEDsPattern1(led, alternate1Palette);
+      freezeCounter = FREEZE_TIME*2;
       #ifdef DEBUG_SERIAL
       Serial.print(" -");
       #endif
     } else  if (diff < FFT_HIGH_DIFF-1) {
       freezeCounter = FREEZE_TIME;
-      // generate gliches, sometimes
-      if (!(random8()%4)) FillLEDsPattern1(led, alternate2Palette);
-      else FillLEDsPattern1(led, alternate1Palette);
+      // generate color gliches, sometimes
+      FillLEDsPattern1(led, alternate2Palette);
       #ifdef DEBUG_SERIAL
       Serial.print(" --");
       #endif
-    } else {
-      colorIndex++;
     }
     
   }
-  fadeall();
+  
+  
   FastLED.show();
 
   #ifdef DEBUG_SERIAL
@@ -112,7 +110,7 @@ void Lamps::run(uint8_t LFi, uint8_t HFi)
   #endif
 }
 
-void Lamps::fadeall() { for(int i = 0; i < NUM_LEDS; i++) { leds[i].nscale8(247); } }
+void Lamps::fadeall() { for(int i = 0; i < NUM_LEDS; i++) { leds[i].nscale8(FADE_VEL); } }
 
 void Lamps::fadeallR() 
 { 
@@ -125,29 +123,41 @@ void Lamps::fadeallR()
   }
 }
 
+void Lamps::FillLEDs(uint8_t led, CRGBPalette16 palette)
+{
+  for( uint8_t i = 0; i < NUM_LEDS/NUM_LEDS_PER_GROUP; ++i)
+    if (!(random8() % P_CHANGE))
+      for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
+      {  
+        colorIndex++;
+        leds[i] = ColorFromPalette(palette, colorIndex, BRIGHTNESS, currentBlending);
+      }
+}
 
 void Lamps::FillLEDsPattern0(uint8_t led , CRGBPalette16 palette)
 {
   for( uint8_t i = 0; i < NUM_LEDS/NUM_LEDS_PER_GROUP; ++i)
-    //if ((led % (NUM_LEDS/NUM_LEDS_PER_GROUP)) == i)
-    if (led == i)
+  {
+    uint8_t p = (NUM_LEDS/NUM_LEDS_PER_GROUP);
+    //if ((led % 2) == (i % 2) % p)
+    if ((led) == (i))
       for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
       {
-        leds[4*i+j] = ColorFromPalette(palette, colorIndex, BRIGHTNESS, currentBlending);
         colorIndex += C_CHANGE;
+        leds[NUM_LEDS_PER_GROUP*i+j] = ColorFromPalette(palette, colorIndex, BRIGHTNESS, currentBlending);
       }
-  //fadeall();
+  }
 }
 
 void Lamps::FillLEDsPattern1(uint8_t led, CRGBPalette16 palette)
 {
   for( uint8_t i = 0; i < NUM_LEDS/NUM_LEDS_PER_GROUP; ++i)
   {
-    if (!(led % P_CHANGE))
+    if ((led % P_CHANGE))
       for (uint8_t j = 0; j < NUM_LEDS_PER_GROUP; j++)
       {
+        colorIndex -= C_CHANGE ;
         leds[NUM_LEDS_PER_GROUP*i+j] = ColorFromPalette(palette, colorIndex, BRIGHTNESS, currentBlending);
-        colorIndex -= C_CHANGE;
       }
   }
 }

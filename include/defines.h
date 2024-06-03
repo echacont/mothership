@@ -20,10 +20,11 @@
 #define NUM_EVENTS  4
 #define FREEZE_TIME 4
 #define P_CHANGE 5
-#define C_CHANGE 1
+#define C_CHANGE 8
+#define FADE_VEL 225
 
 // FFT and "beat detection" parameters 
-#define NUM_PEAKS     12
-#define FFT_START_IDX 2 // ignore these first peaks, they have noise
+#define NUM_PEAKS     16
+#define FFT_START_IDX 3 // ignore these first peaks, they have noise
 #define FFT_BEAT_DIFF 4
 #define FFT_HIGH_DIFF 0

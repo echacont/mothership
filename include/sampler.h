@@ -54,11 +54,13 @@ struct easyFFT
 
   public:
   float f_peaks[NUM_PEAKS];  // top 5 frequencies peaks in descending order
+  uint8_t LFi ;
+  uint8_t HFi ;
   easyFFT();
   void FFT(int8_t in[],uint8_t N,float Frequency);
   float sine(int i);
   float cosine(int i);
-
+  void getFreqIndexes(void);
 };
 
 
